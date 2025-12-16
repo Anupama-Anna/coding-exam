@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
+<html>
 <body>
-    
+
+<p id="count">0</p>
+<button id="inc">+</button>
+
+<script>
+document.getElementById("inc").onclick = function() {
+    let num = document.getElementById("count").textContent;
+    num++;
+    document.getElementById("count").innerHTML = num;
+}
+</script>
+
 </body>
 </html>
