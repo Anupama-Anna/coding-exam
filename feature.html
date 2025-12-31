@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Manual Time Entry</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #F1F3F7;
+}
+@media (max-width: 600px) {
+  .desktop-only {
+    display: none;
+  }
+}
+
+.desktop-only {
+  padding: 20px;
+}
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.controls input,
+.controls select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.controls button {
+  background: #2A00B2;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  opacity: 0.9;
+}
+.table-wrapper {
+  background: #fff;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 14px;
+  text-align: left;
+}
+
+tbody td {
+  padding: 14px;
+  font-size: 14px;
+}
+
+tbody tr:nth-child(odd) {
+  background: #FFFFFF;
+}
+
+tbody tr:nth-child(even) {
+  background: #F7F6FE;
+}
+
+tbody tr {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+tbody tr:hover {
+  background: #EDE9FF;
+}
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.pages button {
+  margin: 0 2px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.pages button.active {
+  background: #2A00B2;
+  color: #fff;
+}
+
+.pages button:not(.active) {
+  background: #E6E4F5;
+}
+</style>
+</head>
+
+<body>
+    <div style="max-width:1200px;margin:40px auto;background:#fff;border-radius:15px;padding:20px;box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+    <h2 style="color:#2A00B2;text-align:center;margin-bottom:20px;">MANUAL TIME ENTRY</h2>
+
+<div class="desktop-only">
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search..." />
+    <select id="brandFilter"></select>
+    <select id="advisorFilter"></select>
+    <button id="resetBtn">Reset Filters</button>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Plate No</th>
+          <th>Brand</th>
+          <th>Job Card ID</th>
+          <th>Est Delivery</th>
+          <th>Advisor Name</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="pagination">
+    <div id="infoText"></div>
+    <div class="pages" id="pagination"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const data = [
+  { plate:"KL699966", brand:"Toyota", job:"JC-001", date:"05-Jun-2025", advisor:"Henna Advisor" },
+  { plate:"KL232323", brand:"BMW", job:"JC-002", date:"06-Jun-2025", advisor:"Merin Antony" },
+  { plate:"KL32A4423", brand:"Nissan", job:"JC-003", date:"07-Jun-2025", advisor:"Savier Veliath" },
+  { plate:"JN26L0287", brand:"Fiat", job:"JC-004", date:"08-Jun-2025", advisor:"Kaarthik Shankar" },
+  { plate:"KL63H0007", brand:"Nissan", job:"JC-005", date:"09-Jun-2025", advisor:"Bini Balakrishnan" },
+  { plate:"MH20DV2366", brand:"Bentley", job:"JC-006", date:"10-Jun-2025", advisor:"Dalwin Paul" },
+  { plate:"KL64569", brand:"Ferrari", job:"JC-007", date:"11-Jun-2025", advisor:"GK" },
+  { plate:"KL17N4307", brand:"Hyundai", job:"JC-008", date:"12-Jun-2025", advisor:"Nikhil Jomon" },
+  { plate:"KL98J9767", brand:"Toyota", job:"JC-009", date:"13-Jun-2025", advisor:"Abin Benny" },
+  { plate:"GJ05BX4321", brand:"BMW", job:"JC-010", date:"14-Jun-2025", advisor:"Aleena Joy" },
+];
+
+while (data.length < 25) {
+  data.push({...data[data.length % 10], job: "JC-"+(data.length+1)});
+}
+let currentPage = 1;
+const rowsPerPage = 10;
+const brandFilter = document.getElementById("brandFilter");
+const advisorFilter = document.getElementById("advisorFilter");
+
+function initFilters() {
+  const brands = ["All", ...new Set(data.map(d => d.brand))];
+  const advisors = ["All", ...new Set(data.map(d => d.advisor))];
+
+  brandFilter.innerHTML = brands.map(b => `<option>${b}</option>`).join("");
+  advisorFilter.innerHTML = advisors.map(a => `<option>${a}</option>`).join("");
+}
+function getFilteredData() {
+  const search = searchInput.value.toLowerCase();
+  const brand = brandFilter.value;
+  const advisor = advisorFilter.value;
+
+  return data.filter(d => {
+    const matchesSearch =
+      Object.values(d).join(" ").toLowerCase().includes(search);
+    const matchesBrand = brand === "All" || d.brand === brand;
+    const matchesAdvisor = advisor === "All" || d.advisor === advisor;
+    return matchesSearch && matchesBrand && matchesAdvisor;
+  });
+}
+function renderTable() {
+  const filtered = getFilteredData();
+  const start = (currentPage - 1) * rowsPerPage;
+  const pageData = filtered.slice(start, start + rowsPerPage);
+
+  tableBody.innerHTML = pageData.map(d => `
+    <tr onclick="location.href='manual-time-entry/manual-time-add.html'">
+      <td>${d.plate}</td>
+      <td>${d.brand}</td>
+      <td>${d.job}</td>
+      <td>${d.date}</td>
+      <td>${d.advisor}</td>
+    </tr>
+  `).join("");
+
+  renderPagination(filtered.length);
+}
+function renderPagination(total) {
+  const pages = Math.ceil(total / rowsPerPage);
+  pagination.innerHTML = "";
+
+  for (let i = 1; i <= pages; i++) {
+    pagination.innerHTML += `
+      <button class="${i===currentPage?'active':''}"
+        onclick="currentPage=${i}; renderTable()">
+        ${i}
+      </button>`;
+  }
+
+  const start = (currentPage-1)*rowsPerPage+1;
+  const end = Math.min(currentPage*rowsPerPage, total);
+  infoText.textContent = `Showing ${start} to ${end} of ${total} entries`;
+}
+searchInput.oninput =
+brandFilter.onchange =
+advisorFilter.onchange = () => {
+  currentPage = 1;
+  renderTable();
+};
+
+resetBtn.onclick = () => {
+  searchInput.value = "";
+  brandFilter.value = "All";
+  advisorFilter.value = "All";
+  currentPage = 1;
+  renderTable();
+};
+initFilters();
+renderTable();
+</script>
+</body>
+</html>
